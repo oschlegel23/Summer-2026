@@ -112,7 +112,7 @@ Arguments:
 
 Returns: t, uk, Energy, M, H, H2, H3, U_phys
 """
-function Taylor_KdV(C2, C3, K, a, u0, h, tfin; P=4)
+function Taylor_KdV(C2, C3, K, a, u0, h, tfin, P)
     P = P - 1  # order P+1 method uses P derivatives of g
     nsteps = Int(round((tfin - a) / h))
     kpos   = 0:K
