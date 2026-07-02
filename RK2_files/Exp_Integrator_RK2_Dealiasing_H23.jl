@@ -1,9 +1,9 @@
 using FFTW
 using Plots
-include("trap_periodic.jl")
-include("dealias_product_direct.jl")
-include("compute_h2.jl")
-include("compute_h3.jl")
+include("../trap_periodic.jl")
+include("../dealias_product_direct.jl")
+include("../compute_h2.jl")
+include("../compute_h3.jl")
 
 
 function Exp_Integrator_RK2_Dealiasing_H23(C2, C3, K, a, u0, h, tfin)
