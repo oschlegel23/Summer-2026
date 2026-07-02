@@ -1,6 +1,6 @@
 using FFTW
 using Plots
-include("trap_periodic.jl")
+include("../trap_periodic.jl")
 
 
 function Exp_Integrator_RK2(C2, C3, kvec, a, u0, h, tfin)
