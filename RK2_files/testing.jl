@@ -1,8 +1,8 @@
 using FFTW
 using Plots
 using LinearAlgebra
-include("trap_periodic.jl")
-include("dealias_product_direct.jl")
+include("../trap_periodic.jl")
+include("../dealias_product_direct.jl")
 include("Exp_Integrator_RK2_Dealiasing.jl")
 include("Exp_Integrator_RK2.jl")
 
