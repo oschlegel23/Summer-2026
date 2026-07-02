@@ -1,7 +1,7 @@
 using FFTW
 using Plots
-include("trap_periodic.jl")
-include("dealias_product_direct.jl")
+include("../trap_periodic.jl")
+include("../dealias_product_direct.jl")
 
 
 function Exp_Integrator_RK2_Dealiasing(C2, C3, K, a, u0, h, tfin)
