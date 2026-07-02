@@ -2,7 +2,7 @@ cd(@__DIR__)
 
 using Plots, Statistics, Printf, JLD2
 
-@load "results_small.jld2" max_amps_save H3_save H2_save t_save n_samps tfin K P
+@load "results_new3.jld2" max_amps_save H3_save H2_save t_save n_samps tfin K P
 
 # paste scatter plot code here
 
