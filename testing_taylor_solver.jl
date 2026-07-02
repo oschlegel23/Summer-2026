@@ -5,10 +5,10 @@ using JLD2, DelimitedFiles
 include("trap_periodic.jl")
 include("dealias_product_direct.jl")
 include("taylor_KdV_solver.jl")
-include("Exp_Integrator_RK2_Dealiasing_H23.jl")
+include("RK2_files/Exp_Integrator_RK2_Dealiasing_H23.jl")
 include("compute_h2.jl")
 include("compute_h3.jl")
-include("main.jl")
+include("Sampling/main.jl")
 
 # ── Sample initial condition from main.jl ─────────────────────────────────────
 params = ParamSet(
