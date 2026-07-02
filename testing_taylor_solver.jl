@@ -54,7 +54,7 @@ for j in 1:n_samps
     E0_samp = 2π * sum(abs2.(u0[2:end]))
     u0 ./= sqrt(E0_samp / params.E0)
 
-    t_T, uk_T, Energy_T, M_T, H_T, H2_T, H3_T, U_phys_T = Taylor_KdV(C2, C3, K, a, u0, h, tfin; P=P)
+    t_T, uk_T, Energy_T, M_T, H_T, H2_T, H3_T, U_phys_T = Taylor_KdV(C2, C3, K, a, u0, h, tfin, P)
     results[j] = (t_T, uk_T, Energy_T, M_T, H_T, H2_T, H3_T, U_phys_T)
     println("Sample $j max wave amplitude: ", maximum(U_phys_T))
 end
@@ -65,6 +65,9 @@ H2_save = [results[j][6] for j in 1:n_samps]
 t_save  = [collect(results[j][1]) for j in 1:n_samps]
 
 @save "results_small.jld2" max_amps_save H3_save H2_save t_save n_samps tfin K P
+
+
+
 
 # # ── Conserved quantities plots ────────────────────────────────────────────────
 # tplot_T = collect(t_T)[1:length(Energy_T)]
@@ -93,7 +96,7 @@ t_save  = [collect(results[j][1]) for j in 1:n_samps]
 # # errors_R = zeros(length(hs))
 
 # for i in 1:length(hs)
-#     _, _, _, _, H_i_T, _, _, _ = Taylor_KdV(C2, C3, K, a, u0, hs[i], tfin; P=P)
+#     _, _, _, _, H_i_T, _, _, _ = Taylor_KdV(C2, C3, K, a, u0, hs[i], tfin, P)
 #     # _, _, _, _, H_i_R, _, _, _ = Exp_Integrator_RK2_Dealiasing_H23(C2, C3, K, a, u0, hs[i], tfin)
 #     errors_T[i] = abs(H_i_T[end] - H_i_T[1]) / abs(H_i_T[1])
 #     # errors_R[i] = abs(H_i_R[end] - H_i_R[1]) / abs(H_i_R[1])
