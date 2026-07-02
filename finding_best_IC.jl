@@ -56,7 +56,7 @@ Threads.@threads for j in 1:n_samps
     E0_samp = 2π * sum(abs2.(u0[2:end]))
     u0 ./= sqrt(E0_samp / params.E0)
 
-    t_T, uk_T, Energy_T, M_T, H_T, H2_T, H3_T, U_phys_T = Taylor_KdV(C2, C3, K, a, u0, h, tfin; P=P)
+    t_T, uk_T, Energy_T, M_T, H_T, H2_T, H3_T, U_phys_T = Taylor_KdV(C2, C3, K, a, u0, h, tfin, P)
 
     # subsample every 0.02
     idx = 1:save_every:size(uk_T, 2)
@@ -133,6 +133,6 @@ println("Save done!")
 
 
 
-
+# Call with:
 # cd "Desktop/Summer Research 2026/Week 4"
 #julia --threads 8 finding_best_IC.jl
