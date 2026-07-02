@@ -7,10 +7,10 @@ FFTW.set_num_threads(1)
 include("trap_periodic.jl")
 include("dealias_product_direct.jl")
 include("taylor_KdV_solver.jl")
-include("Exp_Integrator_RK2_Dealiasing_H23.jl")
+include("RK2_files/Exp_Integrator_RK2_Dealiasing_H23.jl")
 include("compute_h2.jl")
 include("compute_h3.jl")
-include("main.jl")
+include("Sampling/main.jl")
 
 # ── Sample initial condition from main.jl ─────────────────────────────────────
 params = ParamSet(
@@ -128,7 +128,7 @@ maxu_best_HAB = maxu_timeseries[best_HAB_j]
 U_phys_save = [results[j][8] for j in 1:n_samps]
 
 
-@save "/Users/oliviaschlegel/Desktop/Summer Research 2026/Week 4/results_new3.jld2" max_amps_save H2_init H3_init H_init H2_save H3_save maxu_timeseries uk_best t_best maxu_best best_ratio_j ratios U_phys_save t_a_best t_b_best HAB_vals best_HAB_j growth_ratios uk_best_HAB t_best_HAB maxu_best_HAB n_samps tfin K P
+@save "results_new3.jld2" max_amps_save H2_init H3_init H_init H2_save H3_save maxu_timeseries uk_best t_best maxu_best best_ratio_j ratios U_phys_save t_a_best t_b_best HAB_vals best_HAB_j growth_ratios uk_best_HAB t_best_HAB maxu_best_HAB n_samps tfin K P
 println("Save done!")
 
 
