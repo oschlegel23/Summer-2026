@@ -1,7 +1,9 @@
 cd(@__DIR__)
 using Plots, Statistics, Printf, JLD2
+using LaTeXStrings
+using Plots.PlotMeasures
 
-@load "results_small.jld2" max_amps_save H3_save H2_save U_phys_top5 t_top5 maxu_timeseries top5 n_samps tfin K P
+@load "results_new3.jld2" max_amps_save H3_save H2_save maxu_timeseries n_samps tfin K P
 
 y = max_amps_save
 y_mean = mean(y)
@@ -49,9 +51,10 @@ display(pS2)
 
 # ── Top 5: max(u) vs time, H3 vs time, H2 vs time ───────────────────────────
 top_plots = []
+top5 = sortperm(max_amps_save, rev=true)[1:5]
 for i in 1:5
     local H3_T, H2_T, tplot_T, tplot_U
-    U_phys_T = U_phys_top5[i]  # already a vector of max(u) per timestep
+    U_phys_T = maxu_timeseries[top5[i]]  # already a vector of max(u) per timestep
     H3_T     = H3_save[top5[i]]
     H2_T     = H2_save[top5[i]]
     tplot_T  = range(0, tfin, length=length(H3_T))
@@ -83,7 +86,6 @@ display(top_comparison)
 # println("4σ threshold = ", 4*sigma)
 
 
-using Peaks  # or we can do it manually
 
 # Manual local maxima detection
 function find_peaks(v)
