@@ -14,8 +14,8 @@ include("Sampling/main.jl")
 
 # ── Sample initial condition from main.jl ─────────────────────────────────────
 params = ParamSet(
-    min_samps_accept = 100,
-    max_samps_accept = 200,
+    min_samps_accept = 10,
+    max_samps_accept = 20,
 )
 
 xdata, accept_rate = main(params)

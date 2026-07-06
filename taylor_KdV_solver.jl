@@ -174,6 +174,3 @@ function Taylor_KdV(C2, C3, K, a, u0, h, tfin, P)
     return t, uk, Energy, M, H, H2, H3, U_phys
 end
 
-
-
-
