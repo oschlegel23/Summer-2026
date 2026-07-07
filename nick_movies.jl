@@ -4,11 +4,9 @@ using Plots, FFTW, LinearAlgebra, Statistics, Printf
 using Parameters, Distributions, Roots, Optim, Random, Test, Distributed, SharedArrays
 using JLD2, DelimitedFiles
 
-# Prevent the gksqt window from freezing the animation.
-ENV["GKSwstype"] = "100"
-
 include("gibbs_sample.jl")
-include("taylor_KdV_solver.jl")
+include("nick_KdV_solver.jl")
+using .GibbsSample
 
 # Set plot defaults.
 function set_plot_defaults()
@@ -36,7 +34,10 @@ end
 # Function to make a move of the TKdV simulation.
 function make_movie()
 	set_plot_defaults()
-	## Set Parameters
+	# Prevent the gksqt window from freezing the animation.
+	ENV["GKSwstype"] = "100"	
+	
+	#--- Set Parameters. ---#
 	K    = 16
 	C2   = 1/120
 	C3   = 1.0
@@ -48,44 +49,49 @@ function make_movie()
 	save_every = round(Int, dt_save / dt_num)
 	seed = 0	# Seed for the random sampling.
 
-	# ── Sample initial condition from main.jl ─────────────────────────────────────
+	#--- Sample initial conditions from main.jl ---#
 	gibbs_params = GibbsParams(nmodes = K, cratio = C3/C2, 
 					min_samps_accept=1, seed=seed)
 	xdata, accept_rate = gibbs_sample(gibbs_params)
 	n_samps = size(xdata, 2); println("Samples accepted: ", n_samps)
 
 
-	## Set the initial condition u0.
+	#--- Set the initial condition u0. ---#
 	u0 = zeros(ComplexF64, K+1)
 	# A simple initial condition.
 	u0[2] = -1.0
 	u0 *= sqrt(gibbs_params.E0/compute_energy(u0))
 	# A sampled initial condition.
 	samp_idx = 1
-	u0[2:K+1] = xdata[1:K,samp_idx] .- im .* xdata[K+1:end,samp_idx]
+	#u0[2:K+1] = xdata[1:K,samp_idx] .- im .* xdata[K+1:end,samp_idx]
 
 	# Check that the energy is good.
-	println("Specified E0: ", gibbs_params.E0)
-	println("Energy of u0: ", compute_energy(u0))
+	@test compute_energy(u0) ≈ gibbs_params.E0
+	println("The energy is correct.")
 
-	## Propagate the initial condition forward in time via KdV.
-	t_T, uk_T, Energy_T, M_T, H_T, H2_T, H3_T, U_phys_T = Taylor_KdV(C2, C3, K, a, u0, dt_num, tfin, P)
+	#--- Propagate the initial condition forward in time via KdV. ---#
+	tvals, uhat = Taylor_KdV(C2, C3, K, a, u0, dt_num, tfin, P)
 	
 	# Sparsify the time to save data.
 	idx = 1:save_every:size(uk_T, 2)
-	t_sparse = t_T[idx]
-	uk_sparse = uk_T[:, idx]
+	t_sparse = tvals[idx]
+	uh_sparse = uhat[:, idx]
+	
+
+
+	# TO DO
 	uphys_sparse = U_phys_T[:, idx]
+
+
 
 	N = 4*(2K+1)
 	dx = 2*pi/N	
 	xgrid = -pi .+ (0:N-1)*dx
 
-	#--- Print test quauntities ---#
-	println("Initial time: $(t_sparse[1])")
-	#println("Initial u: $(uphys_sparse[:, 1])")
+	#--- Print test quauntities. ---#
+	#println("Initial time: $(t_sparse[1])")
 
-	#--- Make the simulation movie ---#
+	#--- Make the simulation movie. ---#
 	# Initialize the canvas.
 	plt = plot(xgrid, uphys_sparse[:, 1], 
 				linewidth=2, size=(800, 400), 

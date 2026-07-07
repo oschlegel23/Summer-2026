@@ -21,6 +21,9 @@
 #---------------------------------------------------#
 
 #---------------------------------------------------#
+module GibbsSample
+export GibbsParams, gibbs_sample
+
 using Parameters, Distributions, Statistics, LinearAlgebra
 using Roots, Optim, Random, FFTW, Test, Distributed, SharedArrays
 using JLD2, DelimitedFiles
@@ -245,5 +248,7 @@ function gibbs_sample(params::GibbsParams)
 	# Compute the overall acceptance rate and return.
 	accept_rate = num_accepted / (loop_count * params.nsamps_per_thread * Threads.nthreads())
 	return xdata[:, 1:min(end, params.max_samps_accept)], accept_rate
+end
+
 end
 

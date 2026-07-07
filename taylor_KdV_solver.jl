@@ -1,6 +1,3 @@
-#include("compute_h2.jl")
-#include("compute_h3.jl")
-#include("dealias_product_direct.jl")
 
 include("routines.jl")
 
@@ -140,12 +137,10 @@ function Taylor_KdV(C2, C3, K, a, u0, h, tfin, P)
     function compute_conserved!(n, u_pos)
         Energy[n] = 2π * sum(abs2.(u_pos[2:end]))
         M[n]      = 2π * real(u_pos[1])
-
         u_zm    = copy(u_pos); u_zm[1] = 0.0
-        xsamp   = [real.(u_zm[2:end]); imag.(u_zm[2:end])]
-        H2[n]   =  C2 * compute_h2(xsamp, K)
-        H3[n]   = C3 * compute_h3(xsamp, K)
-        H[n]    = H2[n] - H3[n]
+        H2[n]   = ham2(u_zm[2:end])
+        H3[n]   = ham3(u_zm[2:end])
+        H[n]    = C2*H2[n] - C3*H3[n]
     end
 
     # compute at t=0
@@ -173,6 +168,7 @@ function Taylor_KdV(C2, C3, K, a, u0, h, tfin, P)
         compute_conserved!(n+1, u_new)
     end
 
-    return t, uk, Energy, M, H, H2, H3, U_phys
+    #return t, uk, Energy, M, H, H2, H3, U_phys
+    return t, uk
 end
 

@@ -1,37 +1,34 @@
 # Subroutines for KdV and Hamiltonian computations.
 
 
-
-### TO DO: Rewrite h2 and h3 in terms of uhat, not xsamp.
-
 #---------------------------------------------------#
-# Compute H2 in the Hamiltonian.
-function compute_h2(xsamp, nmodes)
-	h2 = 0
-	for k in 1:nmodes
-		h2 += k^2 * (xsamp[k]^2 + xsamp[k+nmodes]^2)
+# NOTE: For these routines, it is assumed that uhat 
+# does NOT contain the zero-mode, but we need to settle that.
+
+# Compute the Hamiltonian component H2.
+function ham2(uhat)
+	h2 = 0.
+	for k in 1:length(uhat)
+		h2 += k^2 * abs2(uhat[k])
 	end
 	return 2*pi*h2
 end
 
-# Compute H3 in the Hamiltonian.
-function compute_h3(xsamp, nmodes)
-	h3 = 0
-	for n = 2:nmodes
-		uhn_conj = xsamp[n] + im*xsamp[n+nmodes]
+# Compute the Hamiltonian component H3.
+function ham3(uhat)
+	h3 = 0.
+	for n = 2:length(uhat)
 		for k = 1:n-1
-			h3 += real( uhn_conj * (xsamp[k]-im*xsamp[k+nmodes]) * (xsamp[n-k]-im*xsamp[n-k+nmodes]) )
+			h3 += real( conj(uhat[n])*uhat[k]*uhat[n-k] )
 		end
 	end
 	return 2*pi*h3
 end
-#---------------------------------------------------#
 
 # Energy = 2*pi*sum_{k=1:kmax} uhat_k^2
-# NOTE: Here uhat is assumed NOT to have the zero-mode but
-# we need to settle our convention there.
 compute_energy(uhat) = 2*pi*sum(abs2.(uhat))
 
+#---------------------------------------------------#
 
 # Compute the product of two funtions in Fourier space: w = u*v.
 # NOTE: Here u, v, and w contain a zero-mode.
