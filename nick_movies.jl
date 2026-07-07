@@ -55,21 +55,18 @@ function make_movie()
 	n_samps = size(xdata, 2); println("Samples accepted: ", n_samps)
 
 
-	## Use the sample as the initial condition
-	samp = xdata[:, 1]
+	## Set the initial condition u0.
 	u0 = zeros(ComplexF64, K+1)
-	u0[2:K+1] = samp[1:K] .- im .* samp[K+1:end]
+	# A simple initial condition.
+	u0[2] = -1.0
+	u0 *= sqrt(gibbs_params.E0/compute_energy(u0))
+	# A sampled initial condition.
+	samp_idx = 1
+	u0[2:K+1] = xdata[1:K,samp_idx] .- im .* xdata[K+1:end,samp_idx]
 
-	### CHECK: Should this be a minus sign above?
-
-	# Simple IC
-	#u0 = zeros(ComplexF64, K+1)
-	#u0[2] = -1.0
-
-	E0_samp = 2π * sum(abs2.(u0[2:end]))
-	u0 ./= sqrt(E0_samp / gibbs_params.E0)
-
-	###### CHECK: was u0 not natively normalized?
+	# Check that the energy is good.
+	println("Specified E0: ", gibbs_params.E0)
+	println("Energy of u0: ", compute_energy(u0))
 
 	## Propagate the initial condition forward in time via KdV.
 	t_T, uk_T, Energy_T, M_T, H_T, H2_T, H3_T, U_phys_T = Taylor_KdV(C2, C3, K, a, u0, dt_num, tfin, P)
@@ -106,6 +103,6 @@ function make_movie()
 	gif(anim, "kdv_movie.gif", fps=15)
 end
 
-test_sample()
+#test_sample()
 make_movie()
 

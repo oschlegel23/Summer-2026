@@ -1,5 +1,10 @@
 # Subroutines for KdV and Hamiltonian computations.
 
+
+
+### TO DO: Rewrite h2 and h3 in terms of uhat, not xsamp.
+
+#---------------------------------------------------#
 # Compute H2 in the Hamiltonian.
 function compute_h2(xsamp, nmodes)
 	h2 = 0
@@ -20,10 +25,16 @@ function compute_h3(xsamp, nmodes)
 	end
 	return 2*pi*h3
 end
+#---------------------------------------------------#
 
-### TO DO: Rewrite the above in terms of uhat, not xsamp.
+# Energy = 2*pi*sum_{k=1:kmax} uhat_k^2
+# NOTE: Here uhat is assumed NOT to have the zero-mode but
+# we need to settle our convention there.
+compute_energy(uhat) = 2*pi*sum(abs2.(uhat))
+
 
 # Compute the product of two funtions in Fourier space: w = u*v.
+# NOTE: Here u, v, and w contain a zero-mode.
 function dealias_product_direct(uhat, vhat)
 	kmax = length(uhat) - 1
 	what = zeros(ComplexF64, kmax+1)
