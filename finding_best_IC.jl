@@ -51,7 +51,13 @@ Threads.@threads for j in 1:n_samps
     imag_parts = samp[K+1:end]
     u0 = zeros(ComplexF64, K+1)
     u0[1] = 0.0
+
+
+    ### HERE: This should be a minus sign I believe.
     u0[2:K+1] = real_parts .+ im .* imag_parts
+
+
+
 
     E0_samp = 2π * sum(abs2.(u0[2:end]))
     u0 ./= sqrt(E0_samp / params.E0)

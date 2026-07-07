@@ -26,7 +26,7 @@ end
 function test_sample()
 	# ── Sample initial condition from main.jl ─────────────────────────────────────
 	gibbs_params = GibbsParams(
-		min_samps_accept = 1, max_samps_accept = 5, seed = 1)
+		min_samps_accept = 1, seed = 1)
 	xdata, accept_rate = gibbs_sample(gibbs_params)
 	n_samps = size(xdata, 2)
 	println("Samples accepted: ", n_samps)
@@ -50,7 +50,7 @@ function make_movie()
 
 	# ── Sample initial condition from main.jl ─────────────────────────────────────
 	gibbs_params = GibbsParams(nmodes = K, cratio = C3/C2, 
-					min_samps_accept=1, max_samps_accept=5, seed=seed)
+					min_samps_accept=1, seed=seed)
 	xdata, accept_rate = gibbs_sample(gibbs_params)
 	n_samps = size(xdata, 2); println("Samples accepted: ", n_samps)
 
@@ -58,7 +58,7 @@ function make_movie()
 	## Use the sample as the initial condition
 	samp = xdata[:, 1]
 	u0 = zeros(ComplexF64, K+1)
-	u0[2:K+1] = samp[1:K] .+ im .* samp[K+1:end]
+	u0[2:K+1] = samp[1:K] .- im .* samp[K+1:end]
 
 	### CHECK: Should this be a minus sign above?
 
@@ -106,6 +106,6 @@ function make_movie()
 	gif(anim, "kdv_movie.gif", fps=15)
 end
 
-
+test_sample()
 make_movie()
 

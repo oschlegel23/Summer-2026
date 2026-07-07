@@ -1,15 +1,29 @@
-#---------------------------------------------------#
-#= In this version, each thread draws from a normal distribution,
-computes the acceptance probability, and then accepts/rejects.
-=#
 
+### Algorithms to draw wave samples from a Gibbs measure.
+
+#---------------------------------------------------#
+# The main routine to call is gibbs_sample(params::GibbsParams)
+# which produces samples via the variable xdata[1:nmodes, 1:nsamps]
+# Each column is an xsamp variable: xsamp = xdata[:,n].
+# The xsamp variable relates to dispalcement u via
+# uhat[k] = xsamp[k] - im*xsamp[k+K]
+
+# Important note on notation:
+# In our paper, xhat is a unit vector relating to displacement u by
+# uhat = sqrt(E0/2pi)*(xsamp[k] - im*xsamp[k+K])
+# But in this code, it was more convenient to include the prefactor
+# in the definition of xsamp, so that
+# uhat[k] = xsamp[k] - im*xsamp[k+K]
+
+# Note on paralellization:
+# In this code, each thread draws from a normal distribution (anisotropic), 
+# computes the acceptance probability, and then accepts/rejects.
+#---------------------------------------------------#
+
+#---------------------------------------------------#
 using Parameters, Distributions, Statistics, LinearAlgebra
 using Roots, Optim, Random, FFTW, Test, Distributed, SharedArrays
 using JLD2, DelimitedFiles
-
-#= REMEMBER: In this code, uhat[k] = xsamp[k] - im*xsamp[k+K]
-which is slightly different from what is in the paper, uhat = sqrt(E0/2pi)*() 
-So xhat is not a unit vector; xhat = sqrt(E0/2pi) * x/norm(x). =#
 
 # Parameters
 @with_kw struct GibbsParams
@@ -61,7 +75,7 @@ function compute_fg_ratio(xsamp, alpha, K, E0, bprime, cratio, good_g)
 end
 
 # Multiply a provisional normal sample by the sigmas for the good g.
-function mult_sigs!(xsamps,sigmas)
+function mult_sigs!(xsamps, sigmas)
 	nmodes = length(sigmas)
 	for n in 1:size(xsamps,2)
 		for k in 1:nmodes
@@ -72,7 +86,7 @@ function mult_sigs!(xsamps,sigmas)
 end
 
 # Normalize a provisional sample.
-function normalize_samps!(xsamps,E0)
+function normalize_samps!(xsamps, E0)
 	cnst = sqrt(E0/(2*pi))
 	for n in 1:size(xsamps,2)
 		xnorm = 0.0
@@ -92,10 +106,10 @@ function draw_xhats(nsamps, sigmas, nmodes, E0, good_g)
 	xsamps = randn(2*nmodes, nsamps)
 
 	# If using good_g, multiply by sigmas for anisotropic Gaussian, in parallel.
-	good_g ? mult_sigs!(xsamps,sigmas) : 0
+	good_g ? mult_sigs!(xsamps, sigmas) : 0
 
 	# Normalize the samples in parallel.
-	normalize_samps!(xsamps,E0)
+	normalize_samps!(xsamps, E0)
 
 	return xsamps
 end
@@ -160,7 +174,7 @@ function sig_squares(alpha, nmodes, bprime)
 	return sigs
 end
 
-# Numerically maximize the ratio f/g.
+# Numerically maximize the ratio f/g to set the rejection constant.
 function max_fg(alpha, params::GibbsParams)
 	# Initialize.
 	nmodes, E0, = params.nmodes, params.E0
@@ -189,6 +203,7 @@ function max_fg(alpha, params::GibbsParams)
 	return biggest
 end
 
+#---------------------------------------------------#
 # Main program to draw several batches of samples.
 function gibbs_sample(params::GibbsParams)
 	# Set the overall seed for the random number generators.
@@ -196,7 +211,7 @@ function gibbs_sample(params::GibbsParams)
 	# Initialize nmodes and bprime.
 	nmodes, bprime = params.nmodes, params.bprime
 
-	# Precompute alpha, the rejection constant, and sigmas
+	# Precompute alpha, the rejection constant, and the sigmas
 	function F_alpha(alpha)
 		sig_sq = sig_squares(alpha, nmodes, bprime)
 		return 1 - alpha/nmodes * sum(sig_sq)
@@ -231,3 +246,4 @@ function gibbs_sample(params::GibbsParams)
 	accept_rate = num_accepted / (loop_count * params.nsamps_per_thread * Threads.nthreads())
 	return xdata[:, 1:min(end, params.max_samps_accept)], accept_rate
 end
+
