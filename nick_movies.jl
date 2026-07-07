@@ -7,8 +7,8 @@ using JLD2, DelimitedFiles
 # Prevent the gksqt window from freezing the animation.
 ENV["GKSwstype"] = "100"
 
-include("taylor_KdV_solver.jl")
 include("gibbs_sample.jl")
+include("taylor_KdV_solver.jl")
 
 # Set plot defaults.
 function set_plot_defaults()

@@ -1,6 +1,8 @@
-include("compute_h2.jl")
-include("compute_h3.jl")
-include("dealias_product_direct.jl")
+#include("compute_h2.jl")
+#include("compute_h3.jl")
+#include("dealias_product_direct.jl")
+
+include("routines.jl")
 
 """
 Compute time derivatives of û_k up to order P, and g^(p)(t0) up to order P-1.

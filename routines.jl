@@ -1,0 +1,52 @@
+# Subroutines for KdV and Hamiltonian computations.
+
+# Compute H2 in the Hamiltonian.
+function compute_h2(xsamp, nmodes)
+	h2 = 0
+	for k in 1:nmodes
+		h2 += k^2 * (xsamp[k]^2 + xsamp[k+nmodes]^2)
+	end
+	return 2*pi*h2
+end
+
+# Compute H3 in the Hamiltonian.
+function compute_h3(xsamp, nmodes)
+	h3 = 0
+	for n = 2:nmodes
+		uhn_conj = xsamp[n] + im*xsamp[n+nmodes]
+		for k = 1:n-1
+			h3 += real( uhn_conj * (xsamp[k]-im*xsamp[k+nmodes]) * (xsamp[n-k]-im*xsamp[n-k+nmodes]) )
+		end
+	end
+	return 2*pi*h3
+end
+
+### TO DO: Rewrite the above in terms of uhat, not xsamp.
+
+# Compute the product of two funtions in Fourier space: w = u*v.
+function dealias_product_direct(uhat, vhat)
+	kmax = length(uhat) - 1
+	what = zeros(ComplexF64, kmax+1)
+	# Compute the coefficient what_k of the product w=u*v.
+	for k in 0:kmax
+		# Sum over (u,v) indices that are (+,+)
+		sum1 = zero(ComplexF64)
+		for j in 0:k 
+			sum1 += uhat[j+1] * vhat[k-j+1]
+		end
+		# Sum over (u,v) indices that are (+,-)
+		sum2 = zero(ComplexF64)
+		for j in k+1:kmax
+			sum2 += uhat[j+1] * conj(vhat[j-k+1])
+		end
+		# Sum over (u,v) indices that are (-,+)
+		sum3 = zero(ComplexF64)
+		for j in 1:kmax-k 
+			sum3 += conj(uhat[j+1]) * vhat[k+j+1]
+		end
+		# Combine the three sums.
+		what[k+1] = sum1 + sum2 + sum3
+	end
+	return what
+end 
+
