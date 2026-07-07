@@ -189,7 +189,7 @@ function max_fg(alpha, params::GibbsParams)
 		xsamp *= cnst / sqrt(sum(xsamp.^2))
 		return compute_fg_ratio(xsamp,alpha,nmodes,E0,bprime,cratio,good_g)
 	end
-    res = Optim.maximize(fg_short, [cnst*ones(nmodes)/sqrt(nmodes); zeros(nmodes)], NelderMead(), Optim.Options(g_tol = 1e-2))
+	res = Optim.maximize(fg_short, [cnst*ones(nmodes)/sqrt(nmodes); zeros(nmodes)], NelderMead(), Optim.Options(g_tol = 1e-2))
 	biggest = Optim.maximum(res)
 	
 	# If cratio = 0, do not use same initial guess, use random initial guesses.

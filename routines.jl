@@ -58,3 +58,15 @@ function dealias_product_direct(uhat, vhat)
 	return what
 end 
 
+#---------------------------------------------------#
+
+# Compute a function in physical space from its Fourier transform.
+# TO DECIDE: Assume zero mode or not?
+
+function uphys_direct(uhat, xgrid)
+	uphys = 0 * xgrid
+	for k = 0:length(uhat)-1
+		uphys += uhat[k+1]*exp.(im*k*xgrid)
+	end
+	return 2*real(uphys)
+end

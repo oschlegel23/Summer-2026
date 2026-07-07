@@ -38,7 +38,7 @@ function make_movie()
 	ENV["GKSwstype"] = "100"	
 	
 	#--- Set Parameters. ---#
-	K    = 16
+	kmax    = 16
 	C2   = 1/120
 	C3   = 1.0
 	a    = 0.0 #?
@@ -50,58 +50,51 @@ function make_movie()
 	seed = 0	# Seed for the random sampling.
 
 	#--- Sample initial conditions from main.jl ---#
-	gibbs_params = GibbsParams(nmodes = K, cratio = C3/C2, 
+	gibbs_params = GibbsParams(nmodes = kmax, cratio = C3/C2, 
 					min_samps_accept=1, seed=seed)
 	xdata, accept_rate = gibbs_sample(gibbs_params)
 	n_samps = size(xdata, 2); println("Samples accepted: ", n_samps)
 
 
 	#--- Set the initial condition u0. ---#
-	u0 = zeros(ComplexF64, K+1)
+	u0 = zeros(ComplexF64, kmax+1)
 	# A simple initial condition.
-	u0[2] = -1.0
+	u0[2] = 1.0
 	u0 *= sqrt(gibbs_params.E0/compute_energy(u0))
 	# A sampled initial condition.
 	samp_idx = 1
-	#u0[2:K+1] = xdata[1:K,samp_idx] .- im .* xdata[K+1:end,samp_idx]
+	#u0[2:kmax+1] = xdata[1:kmax,samp_idx] .- im .* xdata[kmax+1:end,samp_idx]
 
 	# Check that the energy is good.
 	@test compute_energy(u0) ≈ gibbs_params.E0
 	println("The energy is correct.")
 
 	#--- Propagate the initial condition forward in time via KdV. ---#
-	tvals, uhat = Taylor_KdV(C2, C3, K, a, u0, dt_num, tfin, P)
+	tvals, uhats = Taylor_KdV(C2, C3, kmax, a, u0, dt_num, tfin, P)
 	
 	# Sparsify the time to save data.
-	idx = 1:save_every:size(uk_T, 2)
+	idx = 1:save_every:size(uhats, 2)
 	t_sparse = tvals[idx]
-	uh_sparse = uhat[:, idx]
+	uh_sparse = uhats[:, idx]
 	
-
-
-	# TO DO
-	uphys_sparse = U_phys_T[:, idx]
-
-
-
-	N = 4*(2K+1)
-	dx = 2*pi/N	
-	xgrid = -pi .+ (0:N-1)*dx
-
-	#--- Print test quauntities. ---#
-	#println("Initial time: $(t_sparse[1])")
+	# Set up the grid to compute u in physical space.
+	n_ints = 8*kmax
+	dx = 2*pi/n_ints
+	xgrid = -pi .+ (0:n_ints)*dx
 
 	#--- Make the simulation movie. ---#
 	# Initialize the canvas.
-	plt = plot(xgrid, uphys_sparse[:, 1], 
+	uphys = uphys_direct(uh_sparse[:,1], xgrid)	
+	plt = plot(xgrid, uphys, 
 				linewidth=2, size=(800, 400), 
 				xlabel="Space (x)", ylabel="u(x,t)", title="TKdV", ylims=(-1.5, 2.5), 
 				label = @sprintf("%.2f", round(t_sparse[1], sigdigits=3) ) )
 	# Create the animation.
 	anim = @animate for j in 1:length(t_sparse)
 		# Extract the attributes and update them.
+		uphys = uphys_direct(uh_sparse[:,j], xgrid)
 		attrs = plt.series_list[1].plotattributes
-		attrs[:y] = uphys_sparse[:, j]
+		attrs[:y] = uphys
 		attrs[:label] = @sprintf("%.2f", round(t_sparse[j], sigdigits=3) )
 		plt
 	end
