@@ -7,7 +7,12 @@ I will not touch the original version, taylor_KdV_solver, any more
 so that we can learn from it.
 """
 
-# TO DO: Make decision on zero mode and implement it.
+"""
+NOTE: I decided to NOT include the zero mode. We know the momentum
+is conserved, so the zero-mode does not change at all. Thus, it makes
+no sense to carry it around.
+"""
+
 
 include("routines.jl")
 using Parameters
