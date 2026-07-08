@@ -32,6 +32,7 @@ compute_energy(uhat) = 2*pi*sum(abs2.(uhat))
 
 # Compute the product of two funtions in Fourier space: w = u*v.
 # NOTE: Here u, v, and w contain a zero-mode.
+# Each of u,v,w are assumed to be real.
 function dealias_product_direct(uhat, vhat)
 	kmax = length(uhat) - 1
 	what = zeros(ComplexF64, kmax+1)
@@ -61,7 +62,7 @@ end
 #---------------------------------------------------#
 
 # Compute a function in physical space from its Fourier transform.
-# TO DECIDE: Assume zero mode or not?
+# NOTE: This subroutine includes the zero-mode (for now at least).
 
 function uphys_direct(uhat, xgrid)
 	uphys = 0 * xgrid

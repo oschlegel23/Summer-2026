@@ -38,23 +38,18 @@ function make_movie()
 	ENV["GKSwstype"] = "100"	
 	
 	#--- Set Parameters. ---#
-	kmax    = 16
-	C2   = 1/120
-	C3   = 1.0
-	a    = 0.0 #?
-	tfin = 10.0
-	P    = 3
-	dt_num  = 1e-3
-	dt_save = 0.05
-	save_every = round(Int, dt_save / dt_num)
+	kdv_params = KdVParams(C3 = 0.2, tfin = 2.0)
 	seed = 0	# Seed for the random sampling.
 
-	#--- Sample initial conditions from main.jl ---#
+	# Compute a few parameters.
+	@unpack kmax, C2, C3, tfin = kdv_params	
+	n_ints = 10*kmax		# The number of intervals for the physical grid.
+
+	#--- Sample initial conditions from main.jl ---#	
 	gibbs_params = GibbsParams(nmodes = kmax, cratio = C3/C2, 
 					min_samps_accept=1, seed=seed)
 	xdata, accept_rate = gibbs_sample(gibbs_params)
 	n_samps = size(xdata, 2); println("Samples accepted: ", n_samps)
-
 
 	#--- Set the initial condition u0. ---#
 	u0 = zeros(ComplexF64, kmax+1)
@@ -63,44 +58,48 @@ function make_movie()
 	u0 *= sqrt(gibbs_params.E0/compute_energy(u0))
 	# A sampled initial condition.
 	samp_idx = 1
-	#u0[2:kmax+1] = xdata[1:kmax,samp_idx] .- im .* xdata[kmax+1:end,samp_idx]
+	u0[2:kmax+1] = xdata[1:kmax,samp_idx] .- im .* xdata[kmax+1:end,samp_idx]
 
 	# Check that the energy is good.
 	@test compute_energy(u0) ≈ gibbs_params.E0
 	println("The energy is correct.")
 
 	#--- Propagate the initial condition forward in time via KdV. ---#
-	tvals, uhats = Taylor_KdV(C2, C3, kmax, a, u0, dt_num, tfin, P)
-	
-	# Sparsify the time to save data.
-	idx = 1:save_every:size(uhats, 2)
-	t_sparse = tvals[idx]
-	uh_sparse = uhats[:, idx]
-	
+	tvals1, uhats1 = Taylor_KdV(u0, kdv_params)
+
+	#--- Propagate the second half after a depth change. ---#
+	# Use the end state as the new initial condition.
+	kdv_params2 = KdVParams(C3 = 4.0, C2 = 1/200, tfin = 10.0)
+	tvals2, uhats2 = Taylor_KdV(uhats1[:,end], kdv_params2)
+	tvals = [tvals1; tfin .+ tvals2]
+	uhats = [uhats1 uhats2]
+
 	# Set up the grid to compute u in physical space.
-	n_ints = 8*kmax
 	dx = 2*pi/n_ints
 	xgrid = -pi .+ (0:n_ints)*dx
 
 	#--- Make the simulation movie. ---#
 	# Initialize the canvas.
-	uphys = uphys_direct(uh_sparse[:,1], xgrid)	
+	uphys = uphys_direct(uhats[:,1], xgrid)	
 	plt = plot(xgrid, uphys, 
 				linewidth=2, size=(800, 400), 
 				xlabel="Space (x)", ylabel="u(x,t)", title="TKdV", ylims=(-1.5, 2.5), 
-				label = @sprintf("%.2f", round(t_sparse[1], sigdigits=3) ) )
+				label = @sprintf("%.2f", round(tvals[1], sigdigits=3) ) )
 	# Create the animation.
-	anim = @animate for j in 1:length(t_sparse)
+	anim = @animate for j in 1:length(tvals)
 		# Extract the attributes and update them.
-		uphys = uphys_direct(uh_sparse[:,j], xgrid)
+		uphys = uphys_direct(uhats[:,j], xgrid)
 		attrs = plt.series_list[1].plotattributes
 		attrs[:y] = uphys
-		attrs[:label] = @sprintf("%.2f", round(t_sparse[j], sigdigits=3) )
+		attrs[:label] = @sprintf("%.2f", round(tvals[j], sigdigits=3) )
 		plt
 	end
 	# Save the animation.
 	gif(anim, "kdv_movie.gif", fps=15)
 end
+
+
+
 
 #test_sample()
 make_movie()

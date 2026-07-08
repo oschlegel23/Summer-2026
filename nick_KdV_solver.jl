@@ -7,11 +7,8 @@ I will not touch the original version, taylor_KdV_solver, any more
 so that we can learn from it.
 """
 
-"""
-NOTE: I decided to NOT include the zero mode. We know the momentum
-is conserved, so the zero-mode does not change at all. Thus, it makes
-no sense to carry it around.
-"""
+
+# TO DO: Finish making the parameters
 
 
 include("routines.jl")
@@ -20,6 +17,12 @@ using Parameters
 # Parameters
 @with_kw struct KdVParams
 	kmax::Integer = 16
+	C2::Float64 = 1/120
+	C3::Float64 = 1.0
+	tfin::Float64 = 10.
+	order::Integer = 3
+	dt_num  = 1e-3
+	dt_save = 0.05	
 end
 
 
@@ -133,25 +136,35 @@ Arguments:
 
 Returns: t, uk, Energy, M, H, H2, H3, U_phys
 """
-function Taylor_KdV(C2, C3, K, a, u0, h, tfin, P)
-	P = P - 1  # order P+1 method uses P derivatives of g
-	nsteps = Int(round((tfin - a) / h))
-	kpos   = 0:K
+function Taylor_KdV(u0hat, kdv_params::KdVParams)
+	@unpack kmax, C2, C3, tfin, order, dt_num, dt_save = kdv_params
+	save_every = round(Int, dt_save / dt_num)
 
+	#P = P - 1  # order P+1 method uses P derivatives of g
+	num_derivs = kdv_params.order - 1 # order P method uses P-1 derivatives of g
+	
+	kpos   = 0:kmax
 	alpha = -im .* C2 .* Float64.(kpos).^3
 
-	uk      = zeros(ComplexF64, K+1, nsteps+1)
-	uk[:,1] = u0
-
-	tvals = range(a, length=nsteps+1, step=h)
-
-	for n in 1:nsteps
-		u_pos = uk[:, n]
-		t0    = tvals[n]
+	# Initialize and enter loop.
+	uhat = copy(u0hat)
+	tval = 0.
+	count = 0
+	uh_saved = copy(u0hat)
+	tval_saved = 0.	
+	while tval < tfin
 		# Taylor step
-		uk[:, n+1] = taylor_step(u_pos, alpha, C3, kpos, t0, h, P, K)
+		# Hack: set t0=0 for now; I think it should be the same
+		# Later, alter routines to only depend on dt and not t0 and t1.
+		uhat = taylor_step(uhat, alpha, C3, kpos, 0.0, dt_num, num_derivs, kmax)
+		tval += dt_num
+		count += 1
+		if mod(count, save_every) == 0
+			uh_saved = [uh_saved uhat]
+			tval_saved = [tval_saved; tval]
+		end
 	end
 
-	return tvals, uk
+	return tval_saved, uh_saved
 end
 
