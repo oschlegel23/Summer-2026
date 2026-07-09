@@ -3,6 +3,7 @@
 using Plots, FFTW, LinearAlgebra, Statistics, Printf
 using Parameters, Distributions, Roots, Optim, Random, Test, Distributed, SharedArrays
 using JLD2, DelimitedFiles
+using Plots.Measures
 
 include("gibbs_sample.jl")
 include("nick_KdV_solver.jl")
@@ -44,13 +45,15 @@ function make_movie()
 
 	depth1 = 12
 	depth2 = 3
-	c0 = 10.0 	# Linear wave speed to propagate moving frame.
 	bprime = 40.
 	# 
-	kdv_params1 = KdVParams(C3 = 1/8, C2 = 1/60, tfin = 5.0)
-	kdv_params2 = KdVParams(C3 = 1.0, C2 = 1/120, tfin = 10.0)
+	kdv_params1 = KdVParams(C3 = 1/8, C2 = 1/60, tfin = 2.0)
+	kdv_params2 = KdVParams(C3 = 1.0, C2 = 1/120, tfin = 3.0)
 	# The seed for random sampling.
 	seed = 0
+	# The background grid step size
+	c0 = 4.0 	# Linear wave speed to propagate moving frame.
+	dx_bg = 2*pi/20
 
 	# Compute a few parameters.
 	@unpack kmax, C2, C3 = kdv_params1	
@@ -88,34 +91,31 @@ function make_movie()
 	dx = 2*pi/n_ints
 	xgrid = -pi .+ (0:n_ints)*dx	
 	# Compute the physical displacements.
-	uphys1 = uphys_many(uhats1, xgrid) .+ depth1
-	uphys2 = uphys_many(uhats2, xgrid) .+ depth1
+	uphys1 = uphys_many(uhats1, xgrid)
+	uphys2 = uphys_many(uhats2, xgrid)
 	# Combine them.
-	uphys = [uphys1 uphys2]
+	uphys = [uphys1 uphys2] .+ depth1
 	tvals = [tvals1; tfin1 .+ tvals2]
 
-	# The background grid step size
-	dx_bg = 2*pi/80
+
 	# Heaviside function to define the depth.
 	heaviside(x) = Float64(x >= 0)
 
-	# The background grid points currently inside the moving grame.
-	x_bg = (ceil((-pi)/dx_bg):floor((pi)/dx_bg))*dx_bg
-	get_topo(x) = heaviside.(x_bg .- c0*tfin1)*dchange
-	ytopo = get_topo(x_bg)
-
-	# Initialize the plot and set Series 1 cosmetics immediately
+	# Initialize the plot with the wave free surface.
 	plt = plot(xgrid, uphys[:,1], linewidth=2, legend=:none)
 
-	# Add Series 2 and set its specific scatter/dot cosmetics immediately
-	plot!(plt, x_bg, ytopo, 
-		  seriestype=:scatter, markersize=3, 
-		  markercolor=:black, markerstrokewidth=0, legend=:none)
+	# Add the topography (just initialization)
+	x_bg = -pi:dx_bg:pi
+	plot!(plt, x_bg, 0*x_bg, 
+		  line=:solid, marker=:circle, markersize=3, 
+		  linecolor=:black, markercolor=:black, 
+		  markerstrokewidth=0, legend=:none)
 
 	# Apply global layout cosmetics to the canvas
 	plot!(plt, size=(800, 400), 
-		  xlabel="Space (x)", ylabel="u(x,t)", 
-		  xlims=(-pi, pi), ylims=(-0.2, 1.2*(depth1+1.)) )
+		  xlabel="x", ylabel="u(x,t)", 
+		  xlims=(-pi, pi), ylims=(-0.5, 1.2*(depth1+2.0)),
+		  bottom_margin=10mm, left_margin=10mm )
 
 	# Cache the attribute dictionaries ONE TIME outside the loop
 	attrs1 = plt.series_list[1].plotattributes        
@@ -126,10 +126,9 @@ function make_movie()
 		tval = tvals[j]
 		
 		# Propagate the moving frame to adjust the topography.
-		x_bg = (ceil((c0*tval-pi)/dx_bg):floor((c0*tval+pi)/dx_bg))*dx_bg
-		ytopo = get_topo(x_bg)
+		x_bg = (floor((c0*tval-pi)/dx_bg):ceil((c0*tval+pi)/dx_bg))*dx_bg
+		ytopo = heaviside.(x_bg .- c0*tfin1)*dchange
  
-
 		# Update the data arrays in memory (zero overhead lookups)
 		attrs1[:y] = uphys[:,j]
 		attrs2[:x] = x_bg .- c0*tval

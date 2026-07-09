@@ -22,7 +22,7 @@ using Parameters
 	tfin::Float64 = 10.
 	order::Integer = 3
 	dt_num  = 1e-3
-	dt_save = 0.05	
+	dt_save = 0.025	
 end
 
 
