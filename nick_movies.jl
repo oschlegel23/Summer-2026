@@ -53,7 +53,8 @@ function make_movie()
 	seed = 0
 
 	# Compute a few parameters.
-	@unpack kmax, C2, C3, tfin1 = kdv_params1	
+	@unpack kmax, C2, C3 = kdv_params1	
+	tfin1 = kdv_params1.tfin
 	n_ints = 10*kmax		# The number of intervals for the physical grid.
 	dchange = depth1-depth2
 
