@@ -38,11 +38,16 @@ function make_movie()
 	ENV["GKSwstype"] = "100"	
 	
 	#--- Set Parameters. ---#
-	kdv_params = KdVParams(C3 = 0.2, tfin = 2.0)
-	seed = 0	# Seed for the random sampling.
+	depth1 = 12
+	depth2 = 3
+	# 
+	kdv_params1 = KdVParams(C3 = 0.2, tfin = 2.0)
+	kdv_params2 = KdVParams(C3 = 4.0, C2 = 1/200, tfin = 10.0)
+	# The seed for random sampling.
+	seed = 0
 
 	# Compute a few parameters.
-	@unpack kmax, C2, C3, tfin = kdv_params	
+	@unpack kmax, C2, C3, tfin = kdv_params1	
 	n_ints = 10*kmax		# The number of intervals for the physical grid.
 
 	#--- Sample initial conditions from main.jl ---#	
@@ -64,33 +69,36 @@ function make_movie()
 	@test compute_energy(u0) ≈ gibbs_params.E0
 	println("The energy is correct.")
 
-	#--- Propagate the initial condition forward in time via KdV. ---#
-	tvals1, uhats1 = Taylor_KdV(u0, kdv_params)
-
-	#--- Propagate the second half after a depth change. ---#
-	# Use the end state as the new initial condition.
-	kdv_params2 = KdVParams(C3 = 4.0, C2 = 1/200, tfin = 10.0)
+	#--- Propagate KdV. ---#
+	# The first depth
+	tvals1, uhats1 = Taylor_KdV(u0, kdv_params1)
+	# The second depth: use the end state as the new initial condition.
 	tvals2, uhats2 = Taylor_KdV(uhats1[:,end], kdv_params2)
-	tvals = [tvals1; tfin .+ tvals2]
-	uhats = [uhats1 uhats2]
 
 	# Set up the grid to compute u in physical space.
 	dx = 2*pi/n_ints
 	xgrid = -pi .+ (0:n_ints)*dx
+	# Set up the bottom topography
+	bottom = 0*xgrid
 
 	#--- Make the simulation movie. ---#
 	# Initialize the canvas.
-	uphys = uphys_direct(uhats[:,1], xgrid)	
-	plt = plot(xgrid, uphys, 
+	uphys1 = uphys_many(uhats1, xgrid) .+ depth1
+	uphys2 = uphys_many(uhats2, xgrid) .+ depth2
+	# Combine them
+	uphys = [uphys1 uphys2]
+	tvals = [tvals1; tfin .+ tvals2]
+
+	plt = plot(xgrid, uphys[:,1], 
 				linewidth=2, size=(800, 400), 
-				xlabel="Space (x)", ylabel="u(x,t)", title="TKdV", ylims=(-1.5, 2.5), 
+				xlabel="Space (x)", ylabel="u(x,t)", 
+				title="TKdV", ylims=(-0.2, 14), 
 				label = @sprintf("%.2f", round(tvals[1], sigdigits=3) ) )
 	# Create the animation.
 	anim = @animate for j in 1:length(tvals)
 		# Extract the attributes and update them.
-		uphys = uphys_direct(uhats[:,j], xgrid)
 		attrs = plt.series_list[1].plotattributes
-		attrs[:y] = uphys
+		attrs[:y] = uphys[:,j]
 		attrs[:label] = @sprintf("%.2f", round(tvals[j], sigdigits=3) )
 		plt
 	end

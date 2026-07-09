@@ -61,7 +61,7 @@ end
 
 #---------------------------------------------------#
 
-# Compute a function in physical space from its Fourier transform.
+# Transform uhat to physical space, uphys.
 # NOTE: This subroutine includes the zero-mode (for now at least).
 
 function uphys_direct(uhat, xgrid)
@@ -70,4 +70,13 @@ function uphys_direct(uhat, xgrid)
 		uphys += uhat[k+1]*exp.(im*k*xgrid)
 	end
 	return 2*real(uphys)
+end
+
+# Transform at many time values.
+function uphys_many(uhats, xgrid)
+	uphys = Array{Float64}(undef, length(xgrid), 0)
+	for n = 1:size(uhats,2)
+		uphys = [uphys uphys_direct(uhats[:,n], xgrid)]
+	end
+	return uphys
 end
