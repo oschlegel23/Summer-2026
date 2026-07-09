@@ -40,6 +40,7 @@ function make_movie()
 	#--- Set Parameters. ---#
 	depth1 = 12
 	depth2 = 3
+	bspeed = 1.0
 	# 
 	kdv_params1 = KdVParams(C3 = 0.2, tfin = 2.0)
 	kdv_params2 = KdVParams(C3 = 4.0, C2 = 1/200, tfin = 10.0)
@@ -47,7 +48,7 @@ function make_movie()
 	seed = 0
 
 	# Compute a few parameters.
-	@unpack kmax, C2, C3, tfin = kdv_params1	
+	@unpack kmax, C2, C3, tfin, dt_save = kdv_params1	
 	n_ints = 10*kmax		# The number of intervals for the physical grid.
 
 	#--- Sample initial conditions from main.jl ---#	
@@ -92,20 +93,33 @@ function make_movie()
 	x_bottom = -pi .+ (0:n_ints)*(2*pi/20)
 	btopo1 = 0*x_bottom
 	btopo2 = 0*x_bottom .+ (depth1-depth2)
+	# Function to map points to interval [-pi,pi]
+	xmap(xpts) = mod.(xpts .+ pi, 2*pi) .- pi
 
 	plt = plot([xgrid x_bottom], [uphys[:,1] btopo1], 
-				linewidth=2, size=(800, 400), 
-				xlabel="Space (x)", ylabel="u(x,t)", 
-				title="TKdV", ylims=(-0.2, 14), 
-				label = @sprintf("%.2f", round(tvals[1], sigdigits=3) ) )
+			seriestype = [:path :scatter],
+			linewidth = [2 0],
+			markersize = [0 4], markerstrokewidth = [0 0],
+			size=(800, 400), xlabel="Space (x)", ylabel="u(x,t)", 
+			title="TKdV", xlims=(-pi,pi), ylims=(-0.2, 14), 
+			label = @sprintf("%.2f", round(tvals[1], sigdigits=3) ) )
 	# Create the animation.
 	anim = @animate for j in 1:length(tvals)
-		# Extract the attributes and update them.
-	
-		attrs = plt.series_list[1].plotattributes
-		attrs[:y] = uphys[:,j]
-		attrs[:label] = @sprintf("%.2f", round(tvals[j], sigdigits=3) )
-		plt
+		# Adjust the bottom topography.
+		tvals[j] < tfin ? btopo = btopo1 : btopo = btopo2
+		x_bottom = xmap(x_bottom .- bspeed*dt_save)
+		# Extract the plot attributes and update them.
+		attrs1 = plt.series_list[1].plotattributes		
+		attrs1[:y] = uphys[:,j]
+		# Bottom topography.
+		attrs2 = plt.series_list[2].plotattributes		
+		attrs2[:y] = btopo
+		attrs2[:x] = x_bottom
+		# Time.		
+		attrs1[:label] = @sprintf("%.2f", round(tvals[j], sigdigits=3) )
+
+    	# Explicitly plot
+    	plt
 	end
 	# Save the animation.
 	gif(anim, "kdv_movie.gif", fps=15)
