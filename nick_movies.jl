@@ -38,21 +38,27 @@ function make_movie()
 	ENV["GKSwstype"] = "100"	
 	
 	#--- Set Parameters. ---#
+	# Set: depth ratio=1/4; downstream C3/C2=120; downstream C3=1
+	# Use depth rescalings C3 D3^(-3/2), C2 D2^(1/2)
+	# Get: upstream C3 = 1/8, C2 = 1/60 
+
 	depth1 = 12
 	depth2 = 3
-	bspeed = 1.0
+	c0 = 10.0 	# Linear wave speed to propagate moving frame.
+	bprime = 40.
 	# 
-	kdv_params1 = KdVParams(C3 = 0.2, tfin = 2.0)
-	kdv_params2 = KdVParams(C3 = 4.0, C2 = 1/200, tfin = 10.0)
+	kdv_params1 = KdVParams(C3 = 1/8, C2 = 1/60, tfin = 5.0)
+	kdv_params2 = KdVParams(C3 = 1.0, C2 = 1/120, tfin = 10.0)
 	# The seed for random sampling.
 	seed = 0
 
 	# Compute a few parameters.
-	@unpack kmax, C2, C3, tfin, dt_save = kdv_params1	
+	@unpack kmax, C2, C3, tfin1 = kdv_params1	
 	n_ints = 10*kmax		# The number of intervals for the physical grid.
+	dchange = depth1-depth2
 
 	#--- Sample initial conditions from main.jl ---#	
-	gibbs_params = GibbsParams(nmodes = kmax, cratio = C3/C2, 
+	gibbs_params = GibbsParams(nmodes=kmax, cratio=C3/C2, bprime=bprime,
 					min_samps_accept=1, seed=seed)
 	xdata, accept_rate = gibbs_sample(gibbs_params)
 	n_samps = size(xdata, 2); println("Samples accepted: ", n_samps)
@@ -76,51 +82,65 @@ function make_movie()
 	# The second depth: use the end state as the new initial condition.
 	tvals2, uhats2 = Taylor_KdV(uhats1[:,end], kdv_params2)
 
+	#--- Make the simulation movie. ---#
 	# Set up the grid to compute u in physical space.
 	dx = 2*pi/n_ints
-	xgrid = -pi .+ (0:n_ints)*dx
-	# Set up the bottom topography
-	bottom = 0*xgrid
-
-	#--- Make the simulation movie. ---#
-	# Initialize the canvas.
+	xgrid = -pi .+ (0:n_ints)*dx	
+	# Compute the physical displacements.
 	uphys1 = uphys_many(uhats1, xgrid) .+ depth1
 	uphys2 = uphys_many(uhats2, xgrid) .+ depth1
 	# Combine them.
 	uphys = [uphys1 uphys2]
-	tvals = [tvals1; tfin .+ tvals2]
-	# Construct the bottom topography.
-	x_bottom = -pi .+ (0:n_ints)*(2*pi/20)
-	btopo1 = 0*x_bottom
-	btopo2 = 0*x_bottom .+ (depth1-depth2)
-	# Function to map points to interval [-pi,pi]
-	xmap(xpts) = mod.(xpts .+ pi, 2*pi) .- pi
+	tvals = [tvals1; tfin1 .+ tvals2]
 
-	plt = plot([xgrid x_bottom], [uphys[:,1] btopo1], 
-			seriestype = [:path :scatter],
-			linewidth = [2 0],
-			markersize = [0 4], markerstrokewidth = [0 0],
-			size=(800, 400), xlabel="Space (x)", ylabel="u(x,t)", 
-			title="TKdV", xlims=(-pi,pi), ylims=(-0.2, 14), 
-			label = @sprintf("%.2f", round(tvals[1], sigdigits=3) ) )
+	# The background grid step size
+	dx_bg = 2*pi/80
+	# Heaviside function to define the depth.
+	heaviside(x) = Float64(x >= 0)
+
+	# The background grid points currently inside the moving grame.
+	x_bg = (ceil((-pi)/dx_bg):floor((pi)/dx_bg))*dx_bg
+	get_topo(x) = heaviside.(x_bg .- c0*tfin1)*dchange
+	ytopo = get_topo(x_bg)
+
+	# Initialize the plot and set Series 1 cosmetics immediately
+	plt = plot(xgrid, uphys[:,1], linewidth=2, legend=:none)
+
+	# Add Series 2 and set its specific scatter/dot cosmetics immediately
+	plot!(plt, x_bg, ytopo, 
+		  seriestype=:scatter, markersize=3, 
+		  markercolor=:black, markerstrokewidth=0, legend=:none)
+
+	# Apply global layout cosmetics to the canvas
+	plot!(plt, size=(800, 400), 
+		  xlabel="Space (x)", ylabel="u(x,t)", 
+		  xlims=(-pi, pi), ylims=(-0.2, 1.2*(depth1+1.)) )
+
+	# Cache the attribute dictionaries ONE TIME outside the loop
+	attrs1 = plt.series_list[1].plotattributes        
+	attrs2 = plt.series_list[2].plotattributes       
+
 	# Create the animation.
 	anim = @animate for j in 1:length(tvals)
-		# Adjust the bottom topography.
-		tvals[j] < tfin ? btopo = btopo1 : btopo = btopo2
-		x_bottom = xmap(x_bottom .- bspeed*dt_save)
-		# Extract the plot attributes and update them.
-		attrs1 = plt.series_list[1].plotattributes		
-		attrs1[:y] = uphys[:,j]
-		# Bottom topography.
-		attrs2 = plt.series_list[2].plotattributes		
-		attrs2[:y] = btopo
-		attrs2[:x] = x_bottom
-		# Time.		
-		attrs1[:label] = @sprintf("%.2f", round(tvals[j], sigdigits=3) )
+		tval = tvals[j]
+		
+		# Propagate the moving frame to adjust the topography.
+		x_bg = (ceil((c0*tval-pi)/dx_bg):floor((c0*tval+pi)/dx_bg))*dx_bg
+		ytopo = get_topo(x_bg)
+ 
 
-    	# Explicitly plot
-    	plt
+		# Update the data arrays in memory (zero overhead lookups)
+		attrs1[:y] = uphys[:,j]
+		attrs2[:x] = x_bg .- c0*tval
+		attrs2[:y] = ytopo
+		
+		# Update the global layout title as a dynamic time counter
+		title!(plt, @sprintf("TKdV Simulation (t = %.2f)", round(tval, sigdigits=3)))
+		
+		# Explicitly return the pre-configured plot canvas
+		plt
 	end
+	
 	# Save the animation.
 	gif(anim, "kdv_movie.gif", fps=15)
 end
