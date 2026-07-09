@@ -84,12 +84,16 @@ function make_movie()
 	#--- Make the simulation movie. ---#
 	# Initialize the canvas.
 	uphys1 = uphys_many(uhats1, xgrid) .+ depth1
-	uphys2 = uphys_many(uhats2, xgrid) .+ depth2
-	# Combine them
+	uphys2 = uphys_many(uhats2, xgrid) .+ depth1
+	# Combine them.
 	uphys = [uphys1 uphys2]
 	tvals = [tvals1; tfin .+ tvals2]
+	# Construct the bottom topography.
+	x_bottom = -pi .+ (0:n_ints)*(2*pi/20)
+	btopo1 = 0*x_bottom
+	btopo2 = 0*x_bottom .+ (depth1-depth2)
 
-	plt = plot(xgrid, uphys[:,1], 
+	plt = plot([xgrid x_bottom], [uphys[:,1] btopo1], 
 				linewidth=2, size=(800, 400), 
 				xlabel="Space (x)", ylabel="u(x,t)", 
 				title="TKdV", ylims=(-0.2, 14), 
@@ -97,6 +101,7 @@ function make_movie()
 	# Create the animation.
 	anim = @animate for j in 1:length(tvals)
 		# Extract the attributes and update them.
+	
 		attrs = plt.series_list[1].plotattributes
 		attrs[:y] = uphys[:,j]
 		attrs[:label] = @sprintf("%.2f", round(tvals[j], sigdigits=3) )
