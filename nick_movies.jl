@@ -45,7 +45,7 @@ function make_movie()
 
 	depth1 = 12
 	depth2 = 3
-	bprime = 200.
+	bprime = 400.
 	# 
 	kdv_params1 = KdVParams(C3 = 1/8, C2 = 1/60, tfin = 2.0)
 	kdv_params2 = KdVParams(C3 = 1.0, C2 = 1/120, tfin = 3.0)
