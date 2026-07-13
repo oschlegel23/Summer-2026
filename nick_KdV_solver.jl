@@ -8,8 +8,6 @@ so that we can learn from it.
 """
 
 
-# TO DO: Finish making the parameters
-
 
 include("routines.jl")
 using Parameters
