@@ -12,11 +12,18 @@ include("compute_h2.jl")
 include("compute_h3.jl")
 include("Sampling/main.jl")
 
-# ── Sample initial condition from main.jl ─────────────────────────────────────
+# ── KdV coefficients (single source of truth) ────────────────────────────────
+C2 = 1/120
+C3 = 1.0
+
+# ── Sample initial condition from main.jl ────────────────────────────────────
 params = ParamSet(
     min_samps_accept = 10,
     max_samps_accept = 20,
+    cratio = C3/C2,          # derived, not hardcoded
 )
+
+xdata, accept_rate = main(params)
 
 xdata, accept_rate = main(params)
 println("Samples accepted: ", size(xdata, 2))
@@ -28,8 +35,6 @@ end
 
 
 K    = params.nmodes
-C2   = 1/120
-C3   = 1
 a    = 0
 tfin = 5
 h    = 1e-3
