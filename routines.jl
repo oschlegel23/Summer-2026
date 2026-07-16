@@ -6,6 +6,7 @@
 # does NOT contain the zero-mode, but we need to settle that.
 
 # Compute the Hamiltonian component H2.
+# call it like this: ham2(uhat[2:end]) - to exclude 0 mode
 function ham2(uhat)
 	h2 = 0.
 	for k in 1:length(uhat)
@@ -15,6 +16,7 @@ function ham2(uhat)
 end
 
 # Compute the Hamiltonian component H3.
+# call it like this: ham2(uhat[2:end]) - to exclude 0 mode
 function ham3(uhat)
 	h3 = 0.
 	for n = 2:length(uhat)
