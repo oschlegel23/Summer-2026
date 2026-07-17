@@ -27,6 +27,10 @@ function ham3(uhat)
 	return 2*pi*h3
 end
 
+# Compute the full Hamiltonian H = C2*H2 - C3*H3.
+# call it like this: computeH(uhat[2:end], C2, C3) - to exclude 0 mode
+computeH(uhat, C2, C3) = C2*ham2(uhat) - C3*ham3(uhat)
+
 # Energy = 2*pi*sum_{k=1:kmax} uhat_k^2
 compute_energy(uhat) = 2*pi*sum(abs2.(uhat))
 
