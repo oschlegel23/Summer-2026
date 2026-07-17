@@ -83,7 +83,7 @@ function compute_Ip(alpha, h, num_derivs, kmax)
 				Ip[p+1, ki] = h^(p+1) / (p+1)
 			end
 		else
-			Ip[1, ki] = (1 - exp(-a*h)) / a
+			Ip[1, ki] = -expm1(-a*h) / a
 			for p in 1:num_derivs
 				Ip[p+1, ki] = (h^p - p * Ip[p, ki]) / a
 			end
