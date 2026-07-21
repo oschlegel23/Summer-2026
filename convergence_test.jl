@@ -18,7 +18,7 @@ kpos  = 0:kmax
 u0hat = zeros(ComplexF64, kmax+1)
 u0hat[2:end] = xsamp[1:kmax] .- im .* xsamp[kmax+1:end]
 
-# ── Problem / method parameters ──────────────────────────────────────
+# ── parameters ──────────────────────────────────────
 C2    = 1/120
 C3    = 1.0
 tfin  = 1.0
@@ -26,7 +26,7 @@ order = 3
 
 H0 = computeH(u0hat[2:end], C2, C3)
 
-# ── Convergence sweep over h ──────────────────────────────────────────
+# ── Convergence tests over h ──────────────────────────────────────────
 h_ref = 1e-2
 hs = [h_ref / 2^n for n in 0:6]
 
